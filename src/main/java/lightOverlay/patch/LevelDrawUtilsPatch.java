@@ -25,23 +25,42 @@ public class LevelDrawUtilsPatch {
     @ModMethodPatch(target = LevelDrawUtils.class, name = "addTileBasedDrawProcesses", arguments = {TickManager.class, GameCamera.class, LevelDrawUtils.DrawArea.class, LevelDrawUtils.DrawArea.class, LevelTileTerrainDrawOptions.class, LevelTileLiquidDrawOptions.class, LevelTileTerrainDrawOptions.class, LevelTileDamageDrawOptions.class, LevelTileLightDrawOptions.class, SharedTextureDrawOptions.class, SharedTextureDrawOptions.class, OrderableDrawables.class, List.class, boolean.class, PlayerMob.class})
     public static class AddTileBasedDrawProcessesPatch {
         @Advice.OnMethodExit
-        static void onExit(@Advice.FieldValue("level") Level level, @Advice.Argument(1) GameCamera camera, @Advice.Argument(2) LevelDrawUtils.DrawArea tileArea, @Advice.Argument(11) OrderableDrawables list) {
+        static void onExit(
+                @Advice.FieldValue("level")
+                Level level,
+                @Advice.Argument(1)
+                GameCamera camera,
+                @Advice.Argument(2)
+                LevelDrawUtils.DrawArea tileArea,
+                @Advice.Argument(11)
+                OrderableDrawables list) {
             if (!LightOverlay.settings.drawOverlay || level.lightManager.ambientLightOverride != null)
                 return;
             LightOverlay.fakeHostileMob.setLevel(level);
             Modifier<Integer> modifier = BuffModifiers.MOB_SPAWN_LIGHT_THRESHOLD;
             int threshold = LightOverlay.fakeHostileMob.spawnLightThreshold.limits.applyModifierLimits(
                     modifier,
-                    modifier.finalLimit(modifier.appendManager(modifier.defaultBuffManagerValue, LightOverlay.fakeHostileMob.spawnLightThreshold.value))
+                    modifier.finalLimit(modifier.appendManager(modifier.defaultBuffManagerValue,
+                            LightOverlay.fakeHostileMob.spawnLightThreshold.value))
             );
             for (int tileX = tileArea.startX; tileX <= tileArea.endX; tileX++) {
                 for (int tileY = tileArea.startY; tileY <= tileArea.endY; tileY++) {
-                    boolean canSpawn = new MobSpawnLocation(LightOverlay.fakeHostileMob, tileX * 32 + 16, tileY * 32 + 16)
+
+                    boolean canSpawn = new MobSpawnLocation(LightOverlay.fakeHostileMob,
+                            tileX * 32 + 16,
+                            tileY * 32 + 16)
                             .checkMaxStaticLightThreshold(threshold)
                             .checkMobSpawnLocation()
                             .validAndApply();
                     if (canSpawn) {
-                        list.add(new OverlayDrawable(tileX, tileY, camera));
+                        list.add(new OverlayDrawable(tileX,
+                                tileY,
+                                camera));
+                    }
+                    if (LightOverlay.needsTorch(tileX, tileY)) {
+                        list.add(new OverlayDrawable(tileX,
+                                tileY,
+                                camera));
                     }
                 }
             }

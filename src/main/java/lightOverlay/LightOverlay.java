@@ -70,4 +70,29 @@ public class LightOverlay {
         }
         CommandsManager.registerClientCommand(new ModifyOverlayAlphaCommand());
     }
+
+    public static boolean needsTorch(int tileX, int tileY) {
+        if (tileX < 150 && tileY < 150) {
+            // top left
+            if (tileX % 9 == 5 && tileY % 9 == 5) {
+                return true;
+            }
+        } else if (tileX >= 150 && tileY < 150) {
+            // top right
+            if (tileX % 9 == 6 && tileY % 9 == 5) {
+                return true;
+            }
+        } else if (tileX >= 150 && tileY >= 150) {
+            // bottom right
+            if (tileX % 9 == 6 && tileY % 9 == 6) {
+                return true;
+            }
+        } else if (tileX < 150 && tileY >= 150) {
+            // bottom left
+            if (tileX % 9 == 5 && tileY % 9 == 6) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -13,7 +13,7 @@ def modInfo = [
         gameVersion    : "auto",
         modDescription : "Adds an overlay to show dark areas",
         author         : "Snoobinoob",
-        clientside     : false,
+        clientside     : true,
         modDependencies         : [],
         modOptionalDependencies : [],
 ]
