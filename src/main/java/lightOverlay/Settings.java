@@ -18,8 +18,8 @@ public class Settings extends ModSettings {
     public void applyLoadData(LoadData save) {
         if (save == null)
             return;
-        drawOverlay = save.getBoolean("drawoverlay", false);
-        alpha = save.getFloat("alpha", 1, 0, 1);
+        drawOverlay = save.getBoolean("drawoverlay", drawOverlay);
+        alpha = save.getFloat("alpha", alpha, 0, 1);
     }
 
 }
