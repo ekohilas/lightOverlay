@@ -4,6 +4,7 @@ import lightOverlay.LightOverlay;
 import lightOverlay.Settings;
 import necesse.engine.input.Control;
 import necesse.engine.registries.ObjectRegistry;
+import necesse.entity.mobs.attackHandler.AttackHandler;
 import necesse.entity.mobs.PlayerMob;
 import necesse.inventory.InventoryItem;
 import necesse.inventory.PlayerInventory;
@@ -214,6 +215,12 @@ public final class AutoTorch {
 
     private static void place(PlayerMob player, int torchSlot, Point tile, long now) {
         if (player.tryAttack(new PlayerInventorySlot(player.getInv().main, torchSlot), tile.x * 32 + 16, tile.y * 32 + 16)) {
+            // Placing starts the game's click-and-drag handler, which keeps placing along a line toward the mouse
+            // cursor until the mouse button is seen released. End it now, like a quick click, so only this torch
+            // is placed no matter where the cursor is.
+            AttackHandler handler = player.getAttackHandler();
+            if (handler != null)
+                handler.clientEndAttack();
             recentTargets.put(tile, now + TARGET_MEMORY_MS);
             nextActionTime = now + AFTER_PLACE_DELAY_MS;
         }
