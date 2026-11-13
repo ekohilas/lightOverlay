@@ -26,6 +26,11 @@ While it's on, regular torches from your inventory are placed for you, one at a 
 Placements and mining go through the normal player actions, so the server checks them like your own and they work in multiplayer.
 Only plain torches are placed or moved; wall torches, lanterns and other lights are never touched.
 
+## Equipment Set Scroll
+
+This repository also holds a second, separate mod in [`equipmentSetScroll/`](equipmentSetScroll/README.md):
+switch between equipment sets by scrolling horizontally.
+
 ## Building
 
 Requires a JDK 17+ and a Steam install of Necesse. The game directory and game version are detected automatically

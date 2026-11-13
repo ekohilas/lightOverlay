@@ -58,6 +58,14 @@ the user with `./gradlew runClient`. Say so explicitly instead of claiming it wo
   own player only) and calls `AutoTorch.tick`, wrapped in try/catch.
 - `autotorch/TorchGrid`: lattice math. `autotorch/AutoTorch`: placement and relocation. `TorchGridOverlay`: grid drawing.
 
+## Second mod: equipmentSetScroll/
+
+Separate mod (`ekohilas.equipmentsetscroll`) sharing `gradle/main.gradle`; build with
+`./gradlew -p equipmentSetScroll buildModJar`. Patches `PlayerMob.submitInputEvent(MainGame, InputEvent, GameCamera)`
+(enter advice; MainGame only passes events the forms didn't use). Set switching = `getInv().equipment.setSelectedSet(i)`
+then `client.sendMovementPacket(false)` (the movement packet carries the selected set). GLFW reports scrolling left
+as positive `getMouseWheelX()`; wheel event IDs (-102/-103) only reflect the Y direction.
+
 ## Game facts used (verified on 1.3.3)
 
 - **Light:** static light spreads 4-way and drops `max(10, objectLightMod)` per tile (40 through solid,

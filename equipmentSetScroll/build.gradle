@@ -1,0 +1,10 @@
+plugins { id 'java' }
+
+dependencies {
+}
+
+repositories {
+}
+
+// Shared mod build logic (same as Light Overlay, one directory up)
+apply from: '../gradle/main.gradle'
