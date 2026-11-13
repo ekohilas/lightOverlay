@@ -7,7 +7,6 @@ import necesse.gfx.camera.GameCamera;
 import necesse.gfx.gameTooltips.StringTooltips;
 import necesse.gfx.ui.HUD;
 import necesse.level.maps.Level;
-import org.lwjgl.opengl.GL11;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -20,7 +19,7 @@ import java.util.List;
  * hovered tile. Right clicking a second tile locks the line between the two. Right clicking a selected
  * tile unselects it (keeping the other one), and right clicking any other tile unselects both.
  * <p>
- * Selected tiles and the tiles on the line are drawn with inverted colours.
+ * Every tile on the line is outlined; the selected tiles get a thicker, yellow outline.
  */
 public class TileMeasure {
     public static Point first;
@@ -89,7 +88,7 @@ public class TileMeasure {
         return second != null ? second : new Point(hoverTileX, hoverTileY);
     }
 
-    /** Draws the selected tiles and the line between them with inverted colours. */
+    /** Outlines every tile on the line between the selected tile and the end tile. */
     public static void draw(Level currentLevel, GameCamera camera) {
         if (!HUD.debugActive)
             return;
@@ -98,12 +97,31 @@ public class TileMeasure {
             return;
         Point end = getEnd(camera.getMouseLevelTilePosX(), camera.getMouseLevelTilePosY());
         for (Point tile : getLine(first, end)) {
-            Renderer.initQuadDraw(32, 32)
-                    .color(1f, 1f, 1f, 1f)
-                    // result = (1 - dst) * white: inverts what is already drawn, keeps destination alpha
-                    .blendFunc(GL11.GL_ONE_MINUS_DST_COLOR, GL11.GL_ZERO, GL11.GL_ZERO, GL11.GL_ONE)
-                    .draw(camera.getTileDrawX(tile.x), camera.getTileDrawY(tile.y));
+            boolean selected = tile.equals(first) || tile.equals(second);
+            drawOutline(camera, tile, selected ? SELECTED_COLOR : LINE_COLOR, selected ? 2 : 1);
         }
+    }
+
+    private static final float[] LINE_COLOR = {1f, 1f, 1f, 0.9f};
+    private static final float[] SELECTED_COLOR = {1f, 0.85f, 0.1f, 1f};
+
+    /**
+     * Draws a border just inside the tile: one dark pixel on the edge (so it shows on bright ground),
+     * then {@code thickness} pixels in the given colour.
+     */
+    private static void drawOutline(GameCamera camera, Point tile, float[] color, int thickness) {
+        int x = camera.getTileDrawX(tile.x);
+        int y = camera.getTileDrawY(tile.y);
+        drawBorder(x, y, 32, 1, 0f, 0f, 0f, 0.6f);
+        drawBorder(x + 1, y + 1, 30, thickness, color[0], color[1], color[2], color[3]);
+    }
+
+    /** Draws a square border of the given size and thickness, with its top left corner at (x, y). */
+    private static void drawBorder(int x, int y, int size, int t, float r, float g, float b, float a) {
+        Renderer.initQuadDraw(size, t).color(r, g, b, a).draw(x, y); // top
+        Renderer.initQuadDraw(size, t).color(r, g, b, a).draw(x, y + size - t); // bottom
+        Renderer.initQuadDraw(t, size - 2 * t).color(r, g, b, a).draw(x, y + t); // left
+        Renderer.initQuadDraw(t, size - 2 * t).color(r, g, b, a).draw(x + size - t, y + t); // right
     }
 
     /** Adds the measurement line to the debug HUD tooltip. */

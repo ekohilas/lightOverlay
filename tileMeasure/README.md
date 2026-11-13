@@ -3,8 +3,8 @@
 A client-side [Necesse](https://store.steampowered.com/app/1169040/Necesse/) mod for measuring distances in tiles.
 It only does anything while the debug HUD is open (**F2**).
 
-- **Right click** a tile to select it. Its colours are inverted.
-- While one tile is selected, a line is drawn from it to the tile under the cursor: every tile on the line is inverted.
+- **Right click** a tile to select it. It gets a yellow outline.
+- While one tile is selected, a line is drawn from it to the tile under the cursor: every tile on the line gets a white outline.
 - **Right click** a second tile to lock the line between the two.
 - **Right click** a selected tile to unselect it. The other one stays selected and the line follows the cursor again.
 - With two tiles selected, **right click** any other tile to unselect both.
@@ -23,7 +23,7 @@ Right clicks on menus work as usual. The selection is cleared when you change le
 
 ## Install
 
-Copy `dist/Tile_Measure-1.3.3-1.0.jar` from the repository root into Necesse's `mods` folder.
+Copy `dist/Tile_Measure-1.3.3-1.1.jar` from the repository root into Necesse's `mods` folder.
 
 ## Building
 

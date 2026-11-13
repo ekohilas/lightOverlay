@@ -78,8 +78,10 @@ Only active while the debug HUD is open (F2 = `Control.DEBUG_HUD`, toggles `HUD.
 `patch/TileMeasurePatches`:
 - `PlayerMob.submitInputEvent`: enter advice with `skipOn = OnNonDefaultValue`; returns true (skipping the
   player's interact) for right clicks (`Control.MOUSE2.defaultKey`, -99) while F2 is on, and for their release.
-- `HUD.draw(Level, GameCamera, PlayerMob, TickManager)` exit: draws the inverted tiles with
-  `Renderer.initQuadDraw(32, 32).blendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO, GL_ZERO, GL_ONE)`.
+- `HUD.draw(Level, GameCamera, PlayerMob, TickManager)` exit: outlines the tiles with thin
+  `Renderer.initQuadDraw(w, h).color(...)` quads. An inverting `blendFunc(GL_ONE_MINUS_DST_COLOR, ...)` quad
+  drew plain white in game, so don't rely on custom blend funcs here. `HUD.selectBoundOptions` only draws corner
+  brackets, not a full outline.
 - `RegionManager.addBiomeBlendingDebugTooltips(int, int, StringTooltips)` exit: only called while building the F2
   tile tooltip, so it's the hook to add a line to it (args are the hovered tile).
 

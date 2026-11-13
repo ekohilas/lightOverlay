@@ -8,7 +8,7 @@
 def modInfo = [
         modID          : "ekohilas.tilemeasure",
         modName        : "Tile Measure",
-        modVersion     : "1.0",
+        modVersion     : "1.1",
         gameVersion    : "auto",
         modDescription : "Measure the tile distance between two tiles in debug mode (F2)",
         author         : "ekohilas",
