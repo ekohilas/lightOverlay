@@ -1,7 +1,7 @@
 package lightOverlay;
 
-import lightOverlay.autotorch.AutoTorch;
-import lightOverlay.autotorch.TorchGrid;
+import lightOverlay.autotorch.GridSetup;
+import lightOverlay.autotorch.TorchLayout;
 import necesse.engine.registries.ObjectRegistry;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawables.OrderableDrawables;
@@ -12,8 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Draws the auto torch grid: the border of each grid cell (the diamond one torch keeps lit) and a marker on each grid
- * point, coloured by status:
+ * Draws the torch grid: the border of each grid cell (the area one light source is responsible for) and a torch
+ * outline on each spot a light source belongs, coloured by status:
  * <ul>
  *     <li>green: a torch is already there</li>
  *     <li>orange: no torch, and mobs can spawn somewhere in its cell (in view), so a torch belongs here</li>
@@ -31,7 +31,7 @@ public final class TorchGridOverlay {
      */
     public static void addDrawables(Level level, GameCamera camera, int startX, int startY, int endX, int endY,
                                     boolean[][] spawnable, OrderableDrawables list) {
-        TorchGrid grid = AutoTorch.getGrid(level);
+        TorchLayout grid = GridSetup.getLayout(level);
         if (grid == null)
             return;
         int width = endX - startX + 1;
@@ -67,7 +67,7 @@ public final class TorchGridOverlay {
             }
         }
 
-        int torchID = ObjectRegistry.getObjectID("torch");
+        int torchID = ObjectRegistry.getObjectID(GridSetup.TORCH_ID);
         float markerAlpha = Math.max(0.3f, LightOverlay.settings.alpha);
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
@@ -83,7 +83,7 @@ public final class TorchGridOverlay {
                 } else {
                     r = 1f; g = 1f; b = 1f;
                 }
-                list.add(new OverlayDrawable(tileX, tileY, LightOverlay.gridPointTexture.initDraw()
+                list.add(new OverlayDrawable(tileX, tileY, LightOverlay.torchOutlineTexture.initDraw()
                         .color(r, g, b, markerAlpha).pos(camera.getTileDrawX(tileX), camera.getTileDrawY(tileY))));
             }
         }

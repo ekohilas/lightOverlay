@@ -1,7 +1,6 @@
 package lightOverlay;
 
-import lightOverlay.command.ModifyOverlayAlphaCommand;
-import lightOverlay.command.TorchSpacingCommand;
+import lightOverlay.command.*;
 import necesse.engine.modifiers.Modifier;
 import necesse.engine.network.server.ServerClient;
 import necesse.entity.mobs.MobSpawnLocation;
@@ -11,7 +10,6 @@ import necesse.engine.input.InputEvent;
 import org.lwjgl.glfw.GLFW;
 import necesse.engine.commands.CommandsManager;
 import necesse.engine.commands.PermissionLevel;
-import necesse.engine.commands.clientCommands.BoolClientCommand;
 import necesse.engine.input.Control;
 import necesse.engine.localization.Localization;
 import necesse.engine.modLoader.annotations.ModEntry;
@@ -24,7 +22,7 @@ import necesse.gfx.gameTexture.GameTexture;
 @ModEntry
 public class LightOverlay {
     public static GameTexture lowLightTexture;
-    public static GameTexture gridPointTexture;
+    public static GameTexture torchOutlineTexture;
     public static GameTexture whiteTexture;
     /** One per thread: the overlay is built during rendering, auto torch runs in the input tick. */
     private static final ThreadLocal<Mob> fakeHostileMob = ThreadLocal.withInitial(ZombieMob::new);
@@ -41,6 +39,7 @@ public class LightOverlay {
                         super.activate(event);
                         if (isPressed()) {
                             settings.drawOverlay = !settings.drawOverlay;
+                            Settings.save();
 
                             MainGame mainGame = (GlobalData.getCurrentState() instanceof MainGame) ? (MainGame)GlobalData.getCurrentState() : null;
                             if (mainGame != null) {
@@ -54,7 +53,7 @@ public class LightOverlay {
 
     public void initResources() {
         lowLightTexture = GameTexture.fromFile("texture/lowlight");
-        gridPointTexture = GameTexture.fromFile("texture/gridpoint");
+        torchOutlineTexture = GameTexture.fromFile("texture/torchoutline");
         whiteTexture = GameTexture.fromFile("texture/white");
     }
 
@@ -64,29 +63,21 @@ public class LightOverlay {
     }
 
     public void postInit() {
-        try {
-            CommandsManager.registerClientCommand(new BoolClientCommand("lightoverlay",
-                    "Toggle light overlay", PermissionLevel.USER,
-                    Settings.class.getField("drawOverlay"), settings));
-        } catch (NoSuchFieldException | SecurityException e) {
-            System.out.println("Could not register lightoverlay command: " + e.getMessage());
-            e.printStackTrace();
-        }
+        CommandsManager.registerClientCommand(new ToggleSettingCommand("lightoverlay", "Toggle light overlay",
+                "Light overlay", () -> settings.drawOverlay, v -> settings.drawOverlay = v));
         CommandsManager.registerClientCommand(new ModifyOverlayAlphaCommand());
-        registerBoolCommand("lightoverlaygrid", "Toggle showing the torch grid", "showGrid");
-        registerBoolCommand("lightoverlayautotorch", "Toggle automatic torch placement", "autoTorch");
-        registerBoolCommand("lightoverlayrelocate", "Toggle moving off-grid torches onto the grid", "autoTorchRelocate");
-        CommandsManager.registerClientCommand(new TorchSpacingCommand());
-    }
-
-    private static void registerBoolCommand(String name, String action, String field) {
-        try {
-            CommandsManager.registerClientCommand(new BoolClientCommand(name, action, PermissionLevel.USER,
-                    Settings.class.getField(field), settings));
-        } catch (NoSuchFieldException | SecurityException e) {
-            System.out.println("Could not register " + name + " command: " + e.getMessage());
-            e.printStackTrace();
-        }
+        CommandsManager.registerClientCommand(new ToggleSettingCommand("lightoverlaygrid", "Toggle showing the torch grid",
+                "Torch grid", () -> settings.showGrid, v -> settings.showGrid = v));
+        CommandsManager.registerClientCommand(new ToggleSettingCommand("lightoverlayautotorch", "Toggle automatic torch placement",
+                "Auto torch", () -> settings.autoTorch, v -> settings.autoTorch = v));
+        CommandsManager.registerClientCommand(new ToggleSettingCommand("lightoverlayrelocate", "Toggle moving off-grid torches onto the grid",
+                "Relocate off-grid torches", () -> settings.autoTorchRelocate, v -> settings.autoTorchRelocate = v));
+        CommandsManager.registerClientCommand(new LayoutCommand());
+        CommandsManager.registerClientCommand(new DistanceCommand());
+        CommandsManager.registerClientCommand(new OriginCommand());
+        CommandsManager.registerClientCommand(new OriginResetCommand());
+        CommandsManager.registerClientCommand(new NiceCommand());
+        CommandsManager.registerClientCommand(new GridInfoCommand());
     }
 
     /** The light level at or below which hostile mobs can spawn (ignoring player buffs). */

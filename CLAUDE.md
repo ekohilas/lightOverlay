@@ -51,20 +51,32 @@ the user with `./gradlew runClient`. Say so explicitly instead of claiming it wo
   (client chat commands). Shared helpers `canMobSpawn(level, x, y)` and `getSpawnLightThreshold(level)` use a
   per-thread fake `ZombieMob` (rendering and input ticks can run on different threads).
 - `Settings.java`: `ModSettings`; saved to the mod's cfg by the client. Load with the field as the default.
+  **Call `Settings.save()` after every change** (commands, hotkeys): leaving the game's settings menu (Escape)
+  calls `Settings.loadClientSettings()`, which reloads every mod's settings from disk and undoes unsaved changes.
 - `patch/LevelDrawUtilsPatch`: exit advice on private `LevelDrawUtils.addTileBasedDrawProcesses(...)` (15 args;
   arg 1 camera, 2 tile area, 11 `OrderableDrawables`). Adds overlay and grid drawables. **This signature is what
   breaks on game updates**; check it with `javap` first.
 - `patch/PlayerMobPatch`: exit advice on `PlayerMob.tickControls(MainGame, boolean, GameCamera)` (runs every frame,
   own player only) and calls `AutoTorch.tick`, wrapped in try/catch.
-- `autotorch/TorchGrid`: lattice math. `autotorch/AutoTorch`: placement and relocation. `TorchGridOverlay`: grid drawing.
+- `autotorch/`: `LayoutType` (the 5 layouts, optimal distances), `Lattice` and `QuadrantLayout` (pure Java, no game
+  classes), `GridSetup` (layout for the current world: origin defaults, per-world key, migrated-world detection),
+  `AutoTorch` (placement and relocation). `TorchGridOverlay`: grid drawing. `command/`: chat commands.
+- `tools/layout-diagrams/run.sh`: tests the layouts and regenerates `docs/layouts/*.png`. Run it after changing
+  layout code, and commit the images.
 
 ## Game facts used (verified on 1.3.3)
 
 - **Light:** static light spreads 4-way and drops `max(10, objectLightMod)` per tile (40 through solid,
   non-transparent objects). Torch `lightLevel` = 150. Mobs spawn when static light <= threshold, default 50.
   So a torch covers Manhattan radius 9.
-- **Optimal grid:** lattice spanned by (r, r+1) and (r+1, -r). It tiles the plane exactly with radius-r diamonds:
-  one torch per 2r²+2r+1 tiles. Anchored at tile (0, 0).
+- **Layouts:** light source distance = tiles between neighbouring lights. Optimal for radius r: unaligned diamond
+  (lattice (k, k+1), (k+1, -k)) 2r; aligned diamond ((h, h), (h, -h)) 2r - 1; square: step s = r if r is odd,
+  else r + 1, so distance s - 1.
+  Quadrant layouts mirror the lattice into 4 quadrants whose lines lie just before the center (center 150 gives corner
+  tiles 149/150).
+- **Worlds migrated from islands (pre-1.0):** `OneWorldMigration` puts the old spawn island at tiles 0-299 and sets
+  `worldEntity.spawnTile` to (150, 150); new worlds find a spawn near (512, 512). The client only sees this through
+  `client.getLocalServer()` (singleplayer/hosting); remote servers send neither spawn tile nor world ID.
 - **Acting as the player from client code:** `player.tryAttack(new PlayerInventorySlot(player.getInv().main, slot), levelX, levelY)`.
   It's the same path as the built-in place-torch hotkey (`PlayerMob.tickControls`); the server validates it, so the
   mod stays client-side.

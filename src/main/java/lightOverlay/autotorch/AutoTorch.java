@@ -13,7 +13,6 @@ import necesse.inventory.item.TorchItem;
 import necesse.inventory.item.toolItem.TileDamageOption;
 import necesse.inventory.item.toolItem.ToolDamageItem;
 import necesse.inventory.item.toolItem.ToolType;
-import necesse.level.gameObject.GameObject;
 import necesse.level.maps.Level;
 
 import java.awt.Point;
@@ -28,7 +27,7 @@ import java.util.Map;
  * server validates every placement), so it works in multiplayer without the server having the mod.
  * <ul>
  *     <li>Finds the darkest tile in reach where mobs can spawn and puts a torch on the grid point covering it
- *     ({@link TorchGrid}). If that grid point can't hold a torch (wall, water, furniture...), the torch goes on the dark
+ *     ({@link TorchLayout}, set up by {@link GridSetup}). If that grid point can't hold a torch (wall, water, furniture...), the torch goes on the dark
  *     tile itself.</li>
  *     <li>Optionally relocates regular torches that are off the grid: a torch is placed on the grid point first, then
  *     the old one is mined with a pickaxe/axe from the inventory. Torches whose grid point is blocked or already
@@ -37,7 +36,7 @@ import java.util.Map;
  * Only acts while the player isn't using an item or holding a mouse button, one action at a time.
  */
 public final class AutoTorch {
-    private static final String TORCH_ID = "torch";
+    private static final String TORCH_ID = GridSetup.TORCH_ID;
     private static final long ACTION_INTERVAL_MS = 250;
     private static final long AFTER_PLACE_DELAY_MS = 500;
     /** How long a targeted tile is treated as lit, to give the static light time to update. */
@@ -98,7 +97,7 @@ public final class AutoTorch {
         if (torchSlot < 0)
             return;
         InventoryItem torchItem = player.getInv().main.getItem(torchSlot);
-        TorchGrid grid = getGrid(level);
+        TorchLayout grid = GridSetup.getLayout(level);
         if (grid == null)
             return;
         int placeRange = ((TorchItem) torchItem.item).getTorchPlaceRange(level, torchItem, player);
@@ -109,23 +108,11 @@ public final class AutoTorch {
             startRelocation(player, level, grid, torchSlot, torchItem, placeRange, now);
     }
 
-    /** The torch grid for this level, or null if torches can't keep it lit. */
-    public static TorchGrid getGrid(Level level) {
-        int radius = LightOverlay.settings.autoTorchSpacing;
-        if (radius <= 0) {
-            GameObject torch = ObjectRegistry.getObject(TORCH_ID);
-            if (torch == null)
-                return null;
-            radius = TorchGrid.coverageRadius(torch.lightLevel, LightOverlay.getSpawnLightThreshold(level));
-        }
-        return radius >= 1 ? new TorchGrid(radius) : null;
-    }
-
-    private static boolean placeOnDarkestTile(PlayerMob player, Level level, TorchGrid grid, int torchSlot, InventoryItem torchItem, int placeRange, long now) {
+    private static boolean placeOnDarkestTile(PlayerMob player, Level level, TorchLayout grid, int torchSlot, InventoryItem torchItem, int placeRange, long now) {
         int playerTileX = player.getTileX();
         int playerTileY = player.getTileY();
-        // Dark tiles up to one grid radius outside reach can still be fixed by a grid point within reach
-        int scan = placeRange / 32 + grid.radius;
+        // Dark tiles up to one light radius outside reach can still be fixed by a grid point within reach
+        int scan = placeRange / 32 + Math.max(1, GridSetup.getCoverageRadius(level));
         List<Point> darkTiles = new ArrayList<>();
         for (int x = playerTileX - scan; x <= playerTileX + scan; x++) {
             for (int y = playerTileY - scan; y <= playerTileY + scan; y++) {
@@ -158,7 +145,7 @@ public final class AutoTorch {
         return false;
     }
 
-    private static void startRelocation(PlayerMob player, Level level, TorchGrid grid, int torchSlot, InventoryItem torchItem, int placeRange, long now) {
+    private static void startRelocation(PlayerMob player, Level level, TorchLayout grid, int torchSlot, InventoryItem torchItem, int placeRange, long now) {
         int toolSlot = findToolSlot(player);
         if (toolSlot < 0)
             return;

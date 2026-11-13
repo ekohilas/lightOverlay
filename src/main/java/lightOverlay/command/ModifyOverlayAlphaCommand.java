@@ -21,6 +21,7 @@ public class ModifyOverlayAlphaCommand extends ModularChatCommand {
         float newValue = GameMath.limit((float)args[0], 0, 1);
 
         LightOverlay.settings.alpha = newValue;
+        lightOverlay.Settings.save();
         commandLog.add("Set light overlay alpha to: " + newValue);
     }
 }
