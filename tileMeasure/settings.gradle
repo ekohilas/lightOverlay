@@ -1,0 +1,38 @@
+/*/
+ |  Settings gradle file for the Tile Measure mod.
+ |  Shares the build logic in ../gradle/main.gradle with Light Overlay.
+/*/
+
+
+// ===== Mod info ===== //
+def modInfo = [
+        modID          : "ekohilas.tilemeasure",
+        modName        : "Tile Measure",
+        modVersion     : "1.0",
+        gameVersion    : "auto",
+        modDescription : "Measure the tile distance between two tiles in debug mode (F2)",
+        author         : "ekohilas",
+        clientside     : true,
+        modDependencies         : [],
+        modOptionalDependencies : [],
+]
+
+
+// ===== Necesse game directory ===== //
+//   "auto" to attempt searching in default locations
+def gamePath = "auto"
+
+
+// ===== Use decompiled sources ===== //
+//   Can be overridden with -PuseDecompiledSources=false
+def useDecompiledSources = true
+
+
+
+// ===== Project name ===== //
+rootProject.name = modInfo.modName
+
+
+gradle.ext.modInfo = modInfo
+gradle.ext.gamePath = gamePath
+gradle.ext.useDecompiledSources = useDecompiledSources

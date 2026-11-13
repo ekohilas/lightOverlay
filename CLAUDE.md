@@ -71,6 +71,18 @@ right/left, and option rows are `Control`s whose key holds the value (saved in t
 `patch/ControlListPatch` intercepts `FormKeyboardAndMouseControlListPopulator.handleInputEvent` while one of them
 is selected for rebinding: horizontal scroll binds the scroll keys, any input cycles an option row.
 
+## Third mod: tileMeasure/
+
+Separate mod (`ekohilas.tilemeasure`) sharing `gradle/main.gradle`; build with `./gradlew -p tileMeasure buildModJar`.
+Only active while the debug HUD is open (F2 = `Control.DEBUG_HUD`, toggles `HUD.debugActive`). Three patches in
+`patch/TileMeasurePatches`:
+- `PlayerMob.submitInputEvent`: enter advice with `skipOn = OnNonDefaultValue`; returns true (skipping the
+  player's interact) for right clicks (`Control.MOUSE2.defaultKey`, -99) while F2 is on, and for their release.
+- `HUD.draw(Level, GameCamera, PlayerMob, TickManager)` exit: draws the inverted tiles with
+  `Renderer.initQuadDraw(32, 32).blendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO, GL_ZERO, GL_ONE)`.
+- `RegionManager.addBiomeBlendingDebugTooltips(int, int, StringTooltips)` exit: only called while building the F2
+  tile tooltip, so it's the hook to add a line to it (args are the hovered tile).
+
 ## Game facts used (verified on 1.3.3)
 
 - **Light:** static light spreads 4-way and drops `max(10, objectLightMod)` per tile (40 through solid,

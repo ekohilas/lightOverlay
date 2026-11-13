@@ -31,6 +31,11 @@ Only plain torches are placed or moved; wall torches, lanterns and other lights 
 This repository also holds a second, separate mod in [`equipmentSetScroll/`](equipmentSetScroll/README.md):
 switch between equipment sets by scrolling horizontally.
 
+## Tile Measure
+
+A third separate mod lives in [`tileMeasure/`](tileMeasure/README.md): in debug mode (F2), right click two tiles to
+see how many tiles apart they are, with the line between them highlighted.
+
 ## Building
 
 Requires a JDK 17+ and a Steam install of Necesse. The game directory and game version are detected automatically
