@@ -19,6 +19,9 @@ While it's on, regular torches from your inventory are placed for you, one at a 
   get moved onto it. The new torch is placed first, then the old one is mined with a pickaxe or axe from your
   inventory. Torches whose grid point is blocked or already has a torch are left alone, since they're filling a gap.
 - `/lightoverlaytorchspacing <radius>` overrides the grid radius in tiles (0 = automatic).
+- `/lightoverlaygrid` toggles showing the grid (works with auto torch off too): white borders mark each torch's
+  cell, and each grid point gets a ring: **green** = torch is there, **orange** = mobs can spawn in that cell,
+  so a torch belongs here, **white** = cell is already lit.
 
 Placements and mining go through the normal player actions, so the server checks them like your own and they work in multiplayer.
 Only plain torches are placed or moved; wall torches, lanterns and other lights are never touched.

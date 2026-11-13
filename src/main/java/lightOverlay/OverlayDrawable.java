@@ -1,19 +1,15 @@
 package lightOverlay;
 
 import necesse.engine.gameLoop.tickManager.TickManager;
-import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.texture.TextureDrawOptions;
 import necesse.gfx.drawables.LevelSortedDrawable;
 
 public class OverlayDrawable extends LevelSortedDrawable {
     private final TextureDrawOptions options;
 
-    public OverlayDrawable(int tileX, int tileY, GameCamera camera) {
+    public OverlayDrawable(int tileX, int tileY, TextureDrawOptions options) {
         super(null, tileX, tileY);
-        int drawX = camera.getTileDrawX(tileX);
-        int drawY = camera.getTileDrawY(tileY);
-
-        options = LightOverlay.lowLightTexture.initDraw().alpha(LightOverlay.settings.alpha).pos(drawX, drawY);
+        this.options = options;
     }
 
     @Override

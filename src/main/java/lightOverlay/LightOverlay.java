@@ -24,15 +24,16 @@ import necesse.gfx.gameTexture.GameTexture;
 @ModEntry
 public class LightOverlay {
     public static GameTexture lowLightTexture;
-    public static Mob fakeHostileMob;
+    public static GameTexture gridPointTexture;
+    public static GameTexture whiteTexture;
+    /** One per thread: the overlay is built during rendering, auto torch runs in the input tick. */
+    private static final ThreadLocal<Mob> fakeHostileMob = ThreadLocal.withInitial(ZombieMob::new);
 
     public static Control toggleOverlayControl;
 
     public static Settings settings;
 
     public void init() {
-        fakeHostileMob = new ZombieMob();
-
         toggleOverlayControl =
                 Control.addModControl(new Control(GLFW.GLFW_KEY_F8, "toggleoverlay") {
                     @Override
@@ -53,6 +54,8 @@ public class LightOverlay {
 
     public void initResources() {
         lowLightTexture = GameTexture.fromFile("texture/lowlight");
+        gridPointTexture = GameTexture.fromFile("texture/gridpoint");
+        whiteTexture = GameTexture.fromFile("texture/white");
     }
 
     public Settings initSettings() {
@@ -70,6 +73,7 @@ public class LightOverlay {
             e.printStackTrace();
         }
         CommandsManager.registerClientCommand(new ModifyOverlayAlphaCommand());
+        registerBoolCommand("lightoverlaygrid", "Toggle showing the torch grid", "showGrid");
         registerBoolCommand("lightoverlayautotorch", "Toggle automatic torch placement", "autoTorch");
         registerBoolCommand("lightoverlayrelocate", "Toggle moving off-grid torches onto the grid", "autoTorchRelocate");
         CommandsManager.registerClientCommand(new TorchSpacingCommand());
@@ -87,18 +91,20 @@ public class LightOverlay {
 
     /** The light level at or below which hostile mobs can spawn (ignoring player buffs). */
     public static int getSpawnLightThreshold(Level level) {
-        fakeHostileMob.setLevel(level);
+        Mob mob = fakeHostileMob.get();
+        mob.setLevel(level);
         Modifier<Integer> modifier = BuffModifiers.MOB_SPAWN_LIGHT_THRESHOLD;
-        return fakeHostileMob.spawnLightThreshold.limits.applyModifierLimits(
+        return mob.spawnLightThreshold.limits.applyModifierLimits(
                 modifier,
-                modifier.finalLimit(modifier.appendManager(modifier.defaultBuffManagerValue, fakeHostileMob.spawnLightThreshold.value))
+                modifier.finalLimit(modifier.appendManager(modifier.defaultBuffManagerValue, mob.spawnLightThreshold.value))
         );
     }
 
     /** Whether a hostile mob could spawn on this tile, using the same checks as natural spawning. */
     public static boolean canMobSpawn(Level level, int tileX, int tileY) {
-        fakeHostileMob.setLevel(level);
-        return new MobSpawnLocation(fakeHostileMob, tileX * 32 + 16, tileY * 32 + 16)
+        Mob mob = fakeHostileMob.get();
+        mob.setLevel(level);
+        return new MobSpawnLocation(mob, tileX * 32 + 16, tileY * 32 + 16)
                 // null client: use the mob's base spawn light threshold (ignores player buffs)
                 .checkStaticLightThreshold((ServerClient) null)
                 .checkMobSpawnLocation()

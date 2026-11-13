@@ -108,7 +108,8 @@ public final class AutoTorch {
             startRelocation(player, level, grid, torchSlot, torchItem, placeRange, now);
     }
 
-    private static TorchGrid getGrid(Level level) {
+    /** The torch grid for this level, or null if torches can't keep it lit. */
+    public static TorchGrid getGrid(Level level) {
         int radius = LightOverlay.settings.autoTorchSpacing;
         if (radius <= 0) {
             GameObject torch = ObjectRegistry.getObject(TORCH_ID);

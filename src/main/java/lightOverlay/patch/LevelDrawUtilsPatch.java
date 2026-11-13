@@ -2,6 +2,7 @@ package lightOverlay.patch;
 
 import lightOverlay.LightOverlay;
 import lightOverlay.OverlayDrawable;
+import lightOverlay.TorchGridOverlay;
 import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.engine.gameLoop.tickManager.TickManager;
 import necesse.entity.mobs.PlayerMob;
@@ -23,15 +24,24 @@ public class LevelDrawUtilsPatch {
     public static class AddTileBasedDrawProcessesPatch {
         @Advice.OnMethodExit
         static void onExit(@Advice.FieldValue("level") Level level, @Advice.Argument(1) GameCamera camera, @Advice.Argument(2) LevelDrawUtils.DrawArea tileArea, @Advice.Argument(11) OrderableDrawables list) {
-            if (!LightOverlay.settings.drawOverlay || level.lightManager.ambientLightOverride != null)
+            boolean drawOverlay = LightOverlay.settings.drawOverlay;
+            boolean drawGrid = LightOverlay.settings.showGrid;
+            if ((!drawOverlay && !drawGrid) || level.lightManager.ambientLightOverride != null)
                 return;
-            for (int tileX = tileArea.startTileX; tileX <= tileArea.endTileX; tileX++) {
-                for (int tileY = tileArea.startTileY; tileY <= tileArea.endTileY; tileY++) {
-                    if (LightOverlay.canMobSpawn(level, tileX, tileY)) {
-                        list.add(new OverlayDrawable(tileX, tileY, camera));
+            int startX = tileArea.startTileX, startY = tileArea.startTileY;
+            boolean[][] spawnable = new boolean[tileArea.endTileX - startX + 1][tileArea.endTileY - startY + 1];
+            for (int tileX = startX; tileX <= tileArea.endTileX; tileX++) {
+                for (int tileY = startY; tileY <= tileArea.endTileY; tileY++) {
+                    boolean canSpawn = LightOverlay.canMobSpawn(level, tileX, tileY);
+                    spawnable[tileX - startX][tileY - startY] = canSpawn;
+                    if (drawOverlay && canSpawn) {
+                        list.add(new OverlayDrawable(tileX, tileY, LightOverlay.lowLightTexture.initDraw()
+                                .alpha(LightOverlay.settings.alpha).pos(camera.getTileDrawX(tileX), camera.getTileDrawY(tileY))));
                     }
                 }
             }
+            if (drawGrid)
+                TorchGridOverlay.addDrawables(level, camera, startX, startY, tileArea.endTileX, tileArea.endTileY, spawnable, list);
         }
     }
 }
