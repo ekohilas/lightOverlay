@@ -4,8 +4,6 @@ import lightOverlay.LightOverlay;
 import lightOverlay.OverlayDrawable;
 import necesse.engine.modLoader.annotations.ModMethodPatch;
 import necesse.engine.gameLoop.tickManager.TickManager;
-import necesse.engine.network.server.ServerClient;
-import necesse.entity.mobs.MobSpawnLocation;
 import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.camera.GameCamera;
 import necesse.gfx.drawOptions.texture.SharedTextureDrawOptions;
@@ -27,15 +25,9 @@ public class LevelDrawUtilsPatch {
         static void onExit(@Advice.FieldValue("level") Level level, @Advice.Argument(1) GameCamera camera, @Advice.Argument(2) LevelDrawUtils.DrawArea tileArea, @Advice.Argument(11) OrderableDrawables list) {
             if (!LightOverlay.settings.drawOverlay || level.lightManager.ambientLightOverride != null)
                 return;
-            LightOverlay.fakeHostileMob.setLevel(level);
             for (int tileX = tileArea.startTileX; tileX <= tileArea.endTileX; tileX++) {
                 for (int tileY = tileArea.startTileY; tileY <= tileArea.endTileY; tileY++) {
-                    boolean canSpawn = new MobSpawnLocation(LightOverlay.fakeHostileMob, tileX * 32 + 16, tileY * 32 + 16)
-                            // null client: use the mob's base spawn light threshold (ignores player buffs)
-                            .checkStaticLightThreshold((ServerClient) null)
-                            .checkMobSpawnLocation()
-                            .validAndApply();
-                    if (canSpawn) {
+                    if (LightOverlay.canMobSpawn(level, tileX, tileY)) {
                         list.add(new OverlayDrawable(tileX, tileY, camera));
                     }
                 }

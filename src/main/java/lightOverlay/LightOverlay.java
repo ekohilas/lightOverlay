@@ -1,12 +1,13 @@
 package lightOverlay;
 
 import lightOverlay.command.ModifyOverlayAlphaCommand;
-import necesse.engine.commands.CommandLog;
-import necesse.engine.commands.ModularChatCommand;
-import necesse.engine.input.InputEvent;
-import necesse.engine.network.client.Client;
-import necesse.engine.network.server.Server;
+import lightOverlay.command.TorchSpacingCommand;
+import necesse.engine.modifiers.Modifier;
 import necesse.engine.network.server.ServerClient;
+import necesse.entity.mobs.MobSpawnLocation;
+import necesse.entity.mobs.buffs.BuffModifiers;
+import necesse.level.maps.Level;
+import necesse.engine.input.InputEvent;
 import org.lwjgl.glfw.GLFW;
 import necesse.engine.commands.CommandsManager;
 import necesse.engine.commands.PermissionLevel;
@@ -69,5 +70,38 @@ public class LightOverlay {
             e.printStackTrace();
         }
         CommandsManager.registerClientCommand(new ModifyOverlayAlphaCommand());
+        registerBoolCommand("lightoverlayautotorch", "Toggle automatic torch placement", "autoTorch");
+        registerBoolCommand("lightoverlayrelocate", "Toggle moving off-grid torches onto the grid", "autoTorchRelocate");
+        CommandsManager.registerClientCommand(new TorchSpacingCommand());
+    }
+
+    private static void registerBoolCommand(String name, String action, String field) {
+        try {
+            CommandsManager.registerClientCommand(new BoolClientCommand(name, action, PermissionLevel.USER,
+                    Settings.class.getField(field), settings));
+        } catch (NoSuchFieldException | SecurityException e) {
+            System.out.println("Could not register " + name + " command: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /** The light level at or below which hostile mobs can spawn (ignoring player buffs). */
+    public static int getSpawnLightThreshold(Level level) {
+        fakeHostileMob.setLevel(level);
+        Modifier<Integer> modifier = BuffModifiers.MOB_SPAWN_LIGHT_THRESHOLD;
+        return fakeHostileMob.spawnLightThreshold.limits.applyModifierLimits(
+                modifier,
+                modifier.finalLimit(modifier.appendManager(modifier.defaultBuffManagerValue, fakeHostileMob.spawnLightThreshold.value))
+        );
+    }
+
+    /** Whether a hostile mob could spawn on this tile, using the same checks as natural spawning. */
+    public static boolean canMobSpawn(Level level, int tileX, int tileY) {
+        fakeHostileMob.setLevel(level);
+        return new MobSpawnLocation(fakeHostileMob, tileX * 32 + 16, tileY * 32 + 16)
+                // null client: use the mob's base spawn light threshold (ignores player buffs)
+                .checkStaticLightThreshold((ServerClient) null)
+                .checkMobSpawnLocation()
+                .validAndApply();
     }
 }
