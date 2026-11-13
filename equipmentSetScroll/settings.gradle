@@ -8,7 +8,7 @@
 def modInfo = [
         modID          : "ekohilas.equipmentsetscroll",
         modName        : "Equipment Set Scroll",
-        modVersion     : "1.0",
+        modVersion     : "1.1",
         gameVersion    : "auto",
         modDescription : "Switch between equipment sets by scrolling horizontally",
         author         : "ekohilas",

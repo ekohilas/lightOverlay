@@ -1,62 +1,63 @@
 package equipmentSetScroll;
 
-import necesse.engine.commands.CommandsManager;
-import necesse.engine.commands.PermissionLevel;
-import necesse.engine.commands.clientCommands.BoolClientCommand;
 import necesse.engine.input.InputEvent;
 import necesse.engine.modLoader.annotations.ModEntry;
 import necesse.engine.network.client.Client;
 import necesse.engine.screenHudManager.UniqueScreenFloatText;
+import necesse.engine.window.WindowManager;
 import necesse.entity.mobs.PlayerMob;
 import necesse.gfx.Renderer;
 import necesse.gfx.gameFont.FontOptions;
+import necesse.engine.input.InputPosition;
 import necesse.inventory.PlayerEquipmentSetInventoryManager;
 
 @ModEntry
 public class EquipmentSetScroll {
-    public static Settings settings;
-
     /** Horizontal scroll not yet turned into a set change (trackpads send many small fractions). */
     private static double scrollBuffer;
     private static long cooldownUntil;
 
-    public Settings initSettings() {
-        settings = new Settings();
-        return settings;
+    public void init() {
+        ItemSetControls.register();
     }
 
-    public void postInit() {
-        registerBoolCommand("equipsetscroll", "Toggle switching equipment sets with horizontal scrolling", "enabled");
-        registerBoolCommand("equipsetscrollinvert", "Toggle inverting the horizontal scroll direction for equipment sets", "invert");
-        registerBoolCommand("equipsetscrollwrap", "Toggle wrapping around between the first and last equipment set", "wrap");
-    }
-
-    private static void registerBoolCommand(String name, String action, String field) {
-        try {
-            CommandsManager.registerClientCommand(new BoolClientCommand(name, action, PermissionLevel.USER,
-                    Settings.class.getField(field), settings));
-        } catch (NoSuchFieldException | SecurityException e) {
-            System.out.println("Could not register " + name + " command: " + e.getMessage());
+    /**
+     * Every frame for the client's own player: handles the next/previous binds when they're
+     * bound to a key, mouse button or vertical scroll (horizontal scroll is handled per event).
+     */
+    public static void tickControls(PlayerMob player) {
+        ItemSetControls.ScrollBindControl next = ItemSetControls.next;
+        ItemSetControls.ScrollBindControl previous = ItemSetControls.previous;
+        if (next == null || previous == null)
+            return;
+        int step = 0;
+        if (!next.isHorizontalScrollBind() && next.isPressed())
+            step++;
+        if (!previous.isHorizontalScrollBind() && previous.isPressed())
+            step--;
+        if (step != 0) {
+            InputPosition mouse = WindowManager.getWindow().mousePos();
+            switchSet(player, step, mouse);
         }
     }
 
     /**
      * Called with each input event the UI didn't use, for the client's own player.
-     * A mostly horizontal wheel event selects the next or previous equipment set.
+     * A mostly horizontal wheel event triggers whichever bind is set to that scroll direction.
      */
     public static void onInputEvent(PlayerMob player, InputEvent event) {
-        if (settings == null || !settings.enabled || event.isUsed() || !event.isMouseWheelEvent())
+        if (event.isUsed() || !ItemSetControls.isHorizontalScroll(event))
             return;
+        ItemSetControls.ScrollBindControl next = ItemSetControls.next;
+        ItemSetControls.ScrollBindControl previous = ItemSetControls.previous;
+        if (next == null || previous == null)
+            return;
+        if (!next.isHorizontalScrollBind() && !previous.isHorizontalScrollBind())
+            return;
+        if (player.getInv().equipment.getTotalSets() <= 1)
+            return;
+
         double x = event.getMouseWheelX();
-        double y = event.getMouseWheelY();
-        if (x == 0 || Math.abs(x) <= Math.abs(y))
-            return;
-
-        PlayerEquipmentSetInventoryManager sets = player.getInv().equipment;
-        int total = sets.getTotalSets();
-        if (total <= 1)
-            return;
-
         long now = System.currentTimeMillis();
         if (now < cooldownUntil) {
             event.use();
@@ -70,17 +71,29 @@ public class EquipmentSetScroll {
             return;
         }
 
-        // GLFW reports scrolling left as positive x, so right (negative) means next set by default
-        int step = scrollBuffer < 0 ? 1 : -1;
-        if (settings.invert)
-            step = -step;
+        int key = ItemSetControls.horizontalScrollKey(scrollBuffer);
         scrollBuffer = 0;
-        cooldownUntil = now + settings.cooldownMs;
+        int step = 0;
+        if (next.getKey() == key)
+            step++;
+        if (previous.getKey() == key)
+            step--;
+        if (step == 0)
+            return;
         event.use();
+        cooldownUntil = now + ItemSetControls.cooldown.getValue();
+        switchSet(player, step, event.pos);
+    }
+
+    private static void switchSet(PlayerMob player, int step, InputPosition textPos) {
+        PlayerEquipmentSetInventoryManager sets = player.getInv().equipment;
+        int total = sets.getTotalSets();
+        if (total <= 1)
+            return;
 
         int current = sets.getSelectedSet();
         int next = current + step;
-        if (settings.wrap)
+        if (ItemSetControls.wrap.isOn())
             next = Math.floorMod(next, total);
         else
             next = Math.max(0, Math.min(total - 1, next));
@@ -93,9 +106,9 @@ public class EquipmentSetScroll {
         if (client != null)
             client.sendMovementPacket(false);
 
-        if (settings.showText && event.pos != null && event.pos.hudX != Integer.MIN_VALUE) {
-            Renderer.hudManager.addElement(new UniqueScreenFloatText(event.pos.hudX, event.pos.hudY - 16,
-                    "Equipment set " + (next + 1) + "/" + total, new FontOptions(16).outline(), "equipmentsetscroll"));
+        if (ItemSetControls.showText.isOn() && textPos != null && textPos.hudX != Integer.MIN_VALUE) {
+            Renderer.hudManager.addElement(new UniqueScreenFloatText(textPos.hudX, textPos.hudY - 16,
+                    "Item set " + (next + 1) + "/" + total, new FontOptions(16).outline(), "equipmentsetscroll"));
         }
     }
 }

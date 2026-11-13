@@ -65,6 +65,11 @@ Separate mod (`ekohilas.equipmentsetscroll`) sharing `gradle/main.gradle`; build
 (enter advice; MainGame only passes events the forms didn't use). Set switching = `getInv().equipment.setSelectedSet(i)`
 then `client.sendMovementPacket(false)` (the movement packet carries the selected set). GLFW reports scrolling left
 as positive `getMouseWheelX()`; wheel event IDs (-102/-103) only reflect the Y direction.
+Settings live as rows in the game's Controls > Item sets group (`ItemSetControls`, added with the private
+`Control.addControl(control, group)` via reflection): next/previous binds use made-up key IDs -150/-151 for scroll
+right/left, and option rows are `Control`s whose key holds the value (saved in the mod cfg like any mod control).
+`patch/ControlListPatch` intercepts `FormKeyboardAndMouseControlListPopulator.handleInputEvent` while one of them
+is selected for rebinding: horizontal scroll binds the scroll keys, any input cycles an option row.
 
 ## Game facts used (verified on 1.3.3)
 

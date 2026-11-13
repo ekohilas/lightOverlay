@@ -25,4 +25,18 @@ public class PlayerMobPatch {
             }
         }
     }
+
+    /** Runs every frame for the client's own player, where the game checks its own item set hotkeys. */
+    @ModMethodPatch(target = PlayerMob.class, name = "tickControls", arguments = {MainGame.class, boolean.class, GameCamera.class})
+    public static class TickControlsPatch {
+        @Advice.OnMethodExit
+        static void onExit(@Advice.This PlayerMob player) {
+            try {
+                EquipmentSetScroll.tickControls(player);
+            } catch (Throwable e) {
+                System.err.println("Equipment Set Scroll error:");
+                e.printStackTrace();
+            }
+        }
+    }
 }
