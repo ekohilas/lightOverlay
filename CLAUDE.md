@@ -32,8 +32,28 @@ cd ~/.local/share/Steam/steamapps/common/Necesse/necesse-server-*/
 (sleep 25; echo stop) | timeout 90 ./jre/bin/java -Xmx2G -jar Server.jar -nogui -mod /home/user/lightOverlay/build/jar -world modtest
 ```
 
-A real client can't run here (assets only come from Steam, no GPU). Rendering and input behaviour need testing by
-the user with `./gradlew runClient`. Say so explicitly instead of claiming it works.
+**Real client, headless (verify rendering and input yourself):** `tools/client/client.sh` runs the non-Steam
+`StartDesktopClient` from `Server.jar` on Xvfb with Mesa software OpenGL (slow, but fine for screenshots), loads
+`build/jar` as a dev mod, creates a world and character, and drives it with xdotool. Look at the screenshots.
+
+```bash
+./gradlew buildModJar
+tools/client/client.sh start                    # ~2-4 min; world "modtest" (made with the mod, so no mismatch prompt)
+tools/client/client.sh shot /tmp/a.png          # then Read the png
+tools/client/client.sh key F8                   # held 0.3 s; a same-frame press+release toggles isPressed() controls twice
+tools/client/client.sh chat "/lightoverlayalpha 0.5"
+tools/client/client.sh log 20                   # game log; chat lines appear as "Chat > ..."
+tools/client/client.sh stop
+```
+
+- Needs `res.data` (fonts, textures, sounds) from the user's Steam install next to `Server.jar`. The environment
+  setup script downloads it from the user's private Google Drive link and installs xdotool. If it's missing, ask
+  the user; never commit `res.data` or put its link in the repo.
+- Coordinates in the script assume the 1280x720 window. To restart from scratch: `rm -rf ~/.config/Necesse`.
+- Audio fails (no device) and the game carries on; ignore the OpenAL errors.
+- After `/` commands the chat box closes; the game keeps focus. Rebuild the jar and restart the client to test changes.
+
+Before reporting a rendering or input change as done, check it here with screenshots.
 
 **Quick API lookup** without decompiling: `javap -p -cp Necesse.jar necesse.gfx.drawables.LevelDrawUtils`.
 
