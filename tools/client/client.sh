@@ -26,7 +26,9 @@ wait_log() { # <pattern> <timeout s> [file]
   local f=${3:-$LOG} t=0
   until grep -q "$1" "$f" 2>/dev/null; do
     sleep 2; t=$((t + 2))
-    grep -q "Crash outside ticking\|Exception" "$LOG" 2>/dev/null && { tail -30 "$LOG"; die "client crashed"; }
+    if grep -q "Crash outside ticking\|Printing crash log" "$LOG" 2>/dev/null || ! pgrep -f '^[^ ]*java .*StartDesktopClient' >/dev/null; then
+      grep -vE "JAVA_TOOL|ALSA|OpenAL" "$LOG" | tail -30; die "client crashed or exited"
+    fi
     [ $t -ge "$2" ] && die "timed out waiting for: $1"
   done
 }
@@ -47,6 +49,16 @@ start)
     setsid Xvfb :99 -screen 0 1280x720x24 >"$OUT/xvfb.log" 2>&1 < /dev/null &
     for _ in $(seq 20); do xdotool getdisplaygeometry >/dev/null 2>&1 && break; sleep 0.5; done
     xdotool getdisplaygeometry >/dev/null 2>&1 || die "Xvfb did not start (see $OUT/xvfb.log)"
+  fi
+  # The desktop client's auth number is a random UUID's most significant bits (saved in cfg/auth), and
+  # ReportUtils.getSessionID crashes with Random.nextInt((int) auth) when the low 32 bits are <= 0: about half of
+  # fresh installs. Pin a serialized UUID whose low bits are positive.
+  AUTH="$HOME/.config/Necesse/cfg/auth"
+  if [ ! -f "$AUTH" ]; then
+    mkdir -p "$(dirname "$AUTH")"
+    python3 -I -c 'import sys
+h=bytes.fromhex("aced00057372000e6a6176612e7574696c2e55554944bc9903f7986d852f0200024a000c6c65617374536967426974734a000b6d6f7374536967426974737870")
+open(sys.argv[1],"wb").write(h+(0x6c69676874746573).to_bytes(8,"big")+(0x4c4f54455354AB01).to_bytes(8,"big"))' "$AUTH"
   fi
   cd "$SRV" || exit 1
   if [ ! -f "$HOME/.config/Necesse/saves/worlds/$WORLD.zip" ]; then
@@ -70,6 +82,7 @@ start)
   xdotool mousemove 811 184 click 1                       # Play on the first character
   wait_log "has joined!" 180 "$GAMELOG"
   sleep 20
+  grep -q "Crash outside ticking\|Printing crash log" "$LOG" && { grep -m1 -A3 "Exceptions:\|crash" "$LOG"; die "client crashed after joining"; }
   echo "in world $WORLD"
   ;;
 shot)  import -window root "${1:?png path}" ;;
@@ -77,6 +90,6 @@ key)   W=$(win); for k in "$@"; do xdotool keydown --window "$W" "$k"; sleep 0.3
 chat)  W=$(win); xdotool key --window "$W" Return; sleep 2; xdotool type --delay 100 "$*"; sleep 1; xdotool key Return ;;
 click) xdotool mousemove "$1" "$2" click 1 ;;
 log)   grep -vE 'JAVA_TOOL|ALSA|OpenAL|audio device|DEBUG' "$GAMELOG" | tail -n "${1:-20}" ;;
-stop)  pkill -f '^[^ ]*java .*StartDesktopClient'; true ;;
+stop)  P='^[^ ]*java .*StartDesktopClient'; pkill -f "$P"; for _ in $(seq 20); do pgrep -f "$P" >/dev/null || exit 0; sleep 0.5; done; pkill -9 -f "$P"; true ;;
 *)     sed -n '2,15p' "$0"; exit 1 ;;
 esac

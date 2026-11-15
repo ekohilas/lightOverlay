@@ -49,8 +49,13 @@ tools/client/client.sh stop
 - Needs `res.data` (fonts, textures, sounds) from the user's Steam install next to `Server.jar`. The environment
   setup script downloads it from the user's private Google Drive link and installs xdotool. If it's missing, ask
   the user; never commit `res.data` or put its link in the repo.
+- `tools/client/slim_res.py` makes a ~46 MB test copy of `res.data` with every sound replaced by silence (sounds
+  are ~276 of 320 MB). Tested on 1.3.3: same results. Removing sounds outright crashes the game (null music).
 - Coordinates in the script assume the 1280x720 window. To restart from scratch: `rm -rf ~/.config/Necesse`.
 - Audio fails (no device) and the game carries on; ignore the OpenAL errors.
+- Game bug the script works around: `ReportUtils.getSessionID` crashes when the low 32 bits of the desktop auth
+  number (a random UUID in `cfg/auth`) are <= 0, about half of fresh installs. `start` pre-writes a safe `cfg/auth`.
+- `start` fails on "Crash outside ticking" or "Printing crash log" (in-game crashes leave a dialog, not an exit).
 - After `/` commands the chat box closes; the game keeps focus. Rebuild the jar and restart the client to test changes.
 
 Before reporting a rendering or input change as done, check it here with screenshots.
